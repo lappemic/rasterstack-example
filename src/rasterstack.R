@@ -103,3 +103,20 @@ plot(st_geometry(scar), add = TRUE)
 ##* Raster Time Series
 #* Taking a closer look at NDVI using products covering 16-day periods in 2005. 
 #*    These images are stored as separate files.
+
+# ndvi_16day object contains all the .tif's files from 2005 (23 files)
+ndvi_16day <- Sys.glob('data/NDVI_alaska_2005/*.tif')
+ndvi <- stack(ndvi_16day)
+crs(ndvi) <- '+init=epsg:3338'
+
+# extract the date of each image from its filename
+dates <- as.Date(
+  sub(
+    'alaska_NDVI_', '', names(ndvi)),
+  '%Y_%m_%d'
+  )
+
+names(ndvi) <- format(dates, '%b %d %Y')
+
+# Sanity check
+plot(subset(ndvi, 1:2))
