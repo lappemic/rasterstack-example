@@ -116,9 +116,72 @@ dates <- as.Date(
   '%Y_%m_%d'
   )
 
+# sanitiy check
+dates
+
 names(ndvi) <- format(dates, '%b %d %Y')
 
 # Sanity check
 plot(subset(ndvi, 1:2))
 
-# Works?
+###* Raster Bricks
+#* A RasterBrick representation of tightly integrated raster layers, such as a 
+#* time series of remote sensing data from sequential overflights, has advantages
+#* for speed but limitations on flexibility.
+#* 
+#* A RasterStack is more felxible because it can mix values stored on disk with
+#* those in memory. Adding a layer of inmemory values to a RasterBrick causes the
+#* entire brick to be loaded into memory, which may not be possible given the 
+#* avialable memory.
+#* 
+#* A RasterBrick can be created from a RasterStack.
+
+ndvi <- crop(ndvi, burn_bbox,
+             filename = file.path(out, 'crop_alaska_ndvi.grd'),
+             overwrite = TRUE)
+#* Crop creates a RasterBrick. In fact, we have been working with a RasterBrick
+#* in memory since first using crop.
+ndvi
+
+#* The immediate challenge is trying to represent the data in ways we can explore
+#* and interpret the characteristics of wildfire visible by remote sensing.
+animate(ndvi, pause = 0.7, n = 1)
+
+####* Pixel Time Series
+#* Verify that something happend very abpuptly by plotting the time series at 
+#* pixles corresponding to locations with dramatic NDVI variation in the layer from 
+#* Aug 13, 2005:
+idx <- match('Aug.13.2005', names(ndvi))
+plot(ndvi[[idx]])
+
+pixel <- click(ndvi[[idx]], cell = TRUE)
+pixel # -> press esc to exit the pixel clicker
+
+# Create a scar_pixel dataframe for the burn scar. 
+pixel <- c(2813, 3720, 2823, 4195, 9910)
+scar_pixel <- data.frame(
+  Date = rep(dates, each = length(pixel)),
+  cell = rep(pixel, length(dates)),
+  Type = 'Burn scar?',
+  NDVI = c(ndvi[pixel])
+  )
+
+# sanity check
+scar_pixel
+
+# Reapeating the selection with click for 'normal looking pixels.
+pixel <- c(1710, 4736, 7374, 1957, 750)
+normal_pixel <- data.frame(
+  Date = rep(dates, each = length(pixel)),
+  cell = rep(pixel, length(dates)),
+  Type = 'normal',
+  NDVI = c(ndvi[pixel])
+  )
+
+# Joining the samples together for comparison as time series
+pixel <- rbind(normal_pixel, scar_pixel)
+ggplot(pixel,
+       aes(x = Date, y = NDVI,
+           group = cell, col = Type)) +
+  geom_line()
+
