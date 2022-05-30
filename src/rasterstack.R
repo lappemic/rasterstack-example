@@ -120,3 +120,5 @@ names(ndvi) <- format(dates, '%b %d %Y')
 
 # Sanity check
 plot(subset(ndvi, 1:2))
+
+# Works?
